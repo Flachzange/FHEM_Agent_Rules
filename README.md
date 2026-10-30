@@ -1,9 +1,49 @@
 # FHEM Agent Rules
 
-Die maßgebliche generische Regeldatei für die angeschlossenen FHEM-Projekte ist
-[AGENTS.md](AGENTS.md). Dort wird sie gepflegt; Modul-Repositories enthalten
-unveränderte, versionierte Kopien und jeweils ihren eigenen Projektzusatz.
-Für Arbeiten an dieser zentralen Quelle zusätzlich [AGENTS-RULES.md](AGENTS-RULES.md) lesen.
+Dieses Repository verwaltet gemeinsame Arbeitsanweisungen für Coding-Agenten, die
+an mehreren FHEM-Modulen arbeiten. Es verbindet **eine zentral gepflegte Regelquelle**
+mit **reproduzierbaren lokalen Kopien**, projektspezifischen Zusätzen und einer
+prüfbaren Verteilung über Pull Requests. Es enthält kein installierbares FHEM-Modul.
+
+Die maßgebliche generische Regeldatei ist [AGENTS.md](AGENTS.md). Angeschlossene
+Modul-Repositories übernehmen sie unverändert und dokumentieren den übernommenen
+Commit. Ihre eigenen Anforderungen bleiben in einem `AGENTS-<Projekt>.md`-Zusatz.
+Für Arbeiten an der zentralen Quelle zusätzlich [AGENTS-RULES.md](AGENTS-RULES.md) lesen.
+
+## Ziel und Abgrenzung
+
+Bei unabhängig gepflegten Regeldateien können gemeinsame Erkenntnisse verloren gehen
+oder widersprüchlich werden. Diese Lösung gibt generischen Regeln einen eindeutigen
+Pflegeort, ohne die Agenten bei jeder Aufgabe von einem dynamischen Download der
+neuesten Anweisungen abhängig zu machen.
+
+Generisch sind beispielsweise belegte FHEM-Framework-Verträge, Regeln zur Quellenprüfung,
+Testaussagekraft oder zum Umgang mit Persistenz. Konkrete Gerätebefehle, Moduldateien,
+Produktentscheidungen und individuelle Migrationsanforderungen bleiben projektspezifisch.
+Die Trennung wird fachlich überprüft; ein Bytevergleich kann sie nicht selbst entscheiden.
+
+Eine zentrale Quelle bedeutet hier **einen Pflegeort**, nicht eine einzige physische
+Datei. Die lokalen Kopien sind bewusst versioniert. Eine Änderung der zentralen Quelle
+ändert weder sofort die Regeln eines laufenden Arbeitsbranches noch beliebige ältere
+Checkouts. Bis zur bewussten Übernahme gilt die dokumentierte akzeptierte Revision.
+
+## Architektur und Zuständigkeiten
+
+| Bestandteil | Zuständigkeit |
+| --- | --- |
+| Zentrale `AGENTS.md` | Gemeinsame Regeln und Wartungsablauf; hier werden generische Änderungen vorgeschlagen |
+| Zentrale `AGENTS-RULES.md` | Anforderungen an die Pflege der Regeln und des Synchronisationswerkzeugs |
+| Lokale `AGENTS.md` im Consumer | Unveränderte Kopie einer akzeptierten zentralen Revision |
+| Lokale `AGENTS-<Projekt>.md` | Projektspezifische Vorgaben, die zusammen mit der generischen Datei gelesen werden |
+| Lokale `.github/agent-rules.json` | Herkunftsrevision und Name des Projektzusatzes |
+| Consumer-Prüfung | Prüft Herkunft, akzeptierte Revision, Zusatz und Bytegleichheit; verändert keine Projektdatei |
+| Zentraler Verteiler | Erstellt bzw. aktualisiert Draft-PRs mit Regeln und Herkunftsdatei |
+| Maintainer | Entscheidet über fachliche Regeln und die Übernahme der zentralen und lokalen PRs |
+
+Die GitHub App dient dem zentralen Workflow zur Authentifizierung. Sie ist kein
+Coding-Agent, benötigt keinen eigenen laufenden Server und verleiht einem Agenten
+im Consumer nicht automatisch Zugang zum zentralen Repository. Prüfungen in
+Consumer-PRs erhalten keine Verteilungszugangsdaten.
 
 ## Aufbau
 
@@ -21,12 +61,36 @@ Die eigentliche `AGENTS.md` bleibt bytegleich; Herkunftsinformationen stehen sep
 
 ## Rückweg für neue Erkenntnisse
 
-1. Projektspezifische Vorgaben im Projektzusatz bearbeiten.
+1. Zunächst den Geltungsbereich und die Berechtigung der aktuellen Aufgabe prüfen.
+   Projektspezifische Vorgaben im Projektzusatz bearbeiten.
 2. Übertragbare Erkenntnisse als zentralen Draft-PR vorschlagen: Ursprung verlinken,
    Belege, Geltungsbereich und Grenzen beschreiben sowie vorhandene Regeln auf
    Dopplungen und Widersprüche prüfen. Bestehende Bearbeitungsberechtigungen beachten.
 3. Maintainer prüft die fachliche Eignung. Keine automatische semantische Freigabe.
 4. Nach zentralem Merge verteilt die Automatik die neue Fassung über Projekt-PRs.
+
+```mermaid
+flowchart TD
+    A["Erkenntnis im Consumer"] --> B{"Generische Regel?"}
+    B -- "Nein" --> C["Projektzusatz bearbeiten"]
+    B -- "Ja" --> D["Berechtigung und Belege prüfen"]
+    D --> E["Zentralen Draft-PR vorschlagen"]
+    E --> F["Fachlicher Review und zentraler Merge"]
+    F --> G["Automatischer Sync-PR im Consumer"]
+    G --> H["Prüfung und bewusste Übernahme"]
+```
+
+Der Rückweg ist eine Arbeitsanweisung für Agenten und Maintainer. Die Automatik
+erzeugt aus einer lokalen Ergänzung weder selbstständig eine fachlich bewertete Regel
+noch einen zentralen PR. Fehlen dem Agenten Zugriff oder Autorisierung, muss er einen
+konkreten Änderungsvorschlag sichern und die Einschränkung benennen. Eine Client-Aufgabe
+ist keine pauschale Freigabe zur Bearbeitung weiterer Repositories oder zum Mergen.
+
+Während einer laufenden Implementierung kann unabhängige Arbeit weitergehen. Ein
+Konflikt mit einer bestehenden Regel muss vor einer davon abhängigen Umsetzung
+ausdrücklich geklärt werden. Nach zentraler Annahme muss die benötigte Revision bewusst
+in den Arbeitsbranch übernommen werden: Der Verteiler pflegt seinen eigenen
+Synchronisierungsbranch und aktualisiert keine beliebigen Featurebranches.
 
 Lokale generische Änderungen lassen den Projektcheck fehlschlagen. Der Check
 überschreibt nichts. Ein abweichender Text wird als Patch im Workflow-Artefakt
@@ -61,13 +125,16 @@ Bei einem Fehler beim Abruf schlägt der Check fehl; er behauptet dann keine Üb
 ## Initiale Einrichtung und Reihenfolge
 
 1. Zentrale Implementierung prüfen und zuerst mergen.
-2. In den beiden Anbindungs-PRs Workflow-Referenz, `tooling-ref` und Herkunfts-SHA
-   auf den endgültigen zentralen `main`-Commit setzen. Nach Squash-/Rebase-Merge ist
-   der vorgeschlagene Branch-SHA normalerweise nicht Bestandteil der `main`-Historie.
-   Solange die Quelle nicht akzeptiert ist, sind fehlschlagende Projektchecks beabsichtigt.
+2. Die vorgeschlagene Herkunftsrevision muss Bestandteil der zentralen `main`-Historie
+   sein. Nach einem normalen Merge kann der ursprüngliche Commit weiterverwendet werden;
+   dann genügt bei zuvor roten Checks ein erneuter Lauf. Nach Squash-/Rebase-Merge
+   kann eine Aktualisierung auf den tatsächlich übernommenen Commit nötig sein.
+   Workflow-Referenz und `tooling-ref` bei der ersten Anbindung auf einen geprüften
+   zentralen Tooling-Stand setzen. Nicht akzeptierte Herkunftsrevisionen werden abgewiesen.
 3. Beide Projekt-PRs prüfen/mergen und den Statuscheck als erforderlich konfigurieren.
 4. GitHub App und zentrale Variablen/Secret einrichten, anschließend Verteilung aktivieren.
-5. Ersten Live-Lauf prüfen. Bestehende Selbsttests ersetzen diesen Berechtigungs- und PR-Test nicht.
+5. Ersten Live-Abgleich prüfen. Einen erfolgreichen Lauf ohne Änderungen vom
+   tatsächlichen Erstellen und Aktualisieren eines Sync-PRs unterscheiden.
 
 ## GitHub App und Verteilung
 
@@ -130,4 +197,21 @@ python3 scripts/agent_rules.py sync --central-root .
 Die Schreibvariante ist im vertrauenswürdigen zentralen Workflow hinterlegt.
 Unit-Tests verwenden echte temporäre Git-Historien und einen zustandsbehafteten
 GitHub-API-Testdouble. Sie belegen Auswahl, Ablehnungen, Dateiumfang und Idempotenz,
-aber keine realen App-Rechte, Branch-Regeln oder einen ausgeführten Live-Verteilungszyklus.
+aber keine realen App-Schreibrechte oder Branch-Regeln. Ein erfolgreicher Live-Abgleich
+ohne Änderungen bestätigt Authentifizierung und Lesezugriff; er belegt noch keinen
+erfolgreichen Schreibvorgang für einen Synchronisierungs-PR.
+
+## Bewusste Grenzen
+
+- Die Prüfung erkennt lokale Textabweichungen, aber keine inhaltlich falsche generische
+  Regel und keinen semantischen Widerspruch in einem beliebigen Projektzusatz.
+- Akzeptierte ältere Revisionen bleiben gültig. Aktualität entsteht durch die Übernahme
+  von Update-PRs, nicht durch einen automatischen Wechsel der Regeln während einer Aufgabe.
+- Der CI-Job kann erst durch erforderliche Statuschecks und passende Branch-Regeln
+  einen Merge blockieren. Die Workflow-Datei richtet diese Repository-Einstellungen nicht ein.
+- Die zentrale PR-Freigabe und Agentenberechtigungen sind getrennt von der technischen
+  Verteilung. Die App meldet Konflikte und erstellt Vorschläge; sie genehmigt keine Regeln.
+- Die Registrierung neuer Consumer, die App-Repositoryauswahl und deren Tooling-Pins
+  müssen zusammenpassen. Es gibt keine automatische Aufnahme weiterer Repositories.
+- Änderungen ausschließlich an dieser README lösen keinen sofortigen Verteilungslauf
+  aus. Der planmäßige Abgleich erzeugt bei unveränderten Regeln ebenfalls keinen Update-PR.
