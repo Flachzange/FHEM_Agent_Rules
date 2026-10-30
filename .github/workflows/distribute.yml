@@ -1,0 +1,40 @@
+name: Distribute reviewed agent rules
+on:
+  push:
+    branches: [main]
+    paths: [AGENTS.md, consumers.json]
+  workflow_dispatch:
+  schedule:
+    - cron: '23 6 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: distribute-agent-rules
+  cancel-in-progress: false
+jobs:
+  distribute:
+    if: github.ref == 'refs/heads/main' && vars.AGENT_RULES_SYNC_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Create short-lived distribution credential
+        id: app
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        with:
+          app-id: ${{ vars.AGENT_RULES_APP_ID }}
+          private-key: ${{ secrets.AGENT_RULES_APP_PRIVATE_KEY }}
+          owner: Flachzange
+          permission-contents: write
+          permission-pull-requests: write
+          repositories: |
+            FHEM_Agent_Rules
+            FHEM_Modul_Wiffi
+            FHEMPresenceSimulation
+      - name: Create or update draft PRs
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: python3 scripts/agent_rules.py sync --central-root . --apply

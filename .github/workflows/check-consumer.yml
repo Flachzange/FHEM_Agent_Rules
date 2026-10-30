@@ -1,0 +1,51 @@
+name: Shared agent rules
+on:
+  workflow_call:
+    inputs:
+      tooling-ref:
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  agent-rules:
+    name: agent-rules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate tooling revision
+        env:
+          TOOLING_REF: ${{ inputs.tooling-ref }}
+        run: |
+          [[ "$TOOLING_REF" =~ ^[0-9a-f]{40}$ ]]
+      - name: Read consumer checkout without running its code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: consumer
+          persist-credentials: false
+      - name: Read fixed central checker revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: Flachzange/FHEM_Agent_Rules
+          ref: ${{ inputs.tooling-ref }}
+          path: central
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch accepted central history
+        working-directory: central
+        run: git fetch origin main:refs/remotes/origin/main
+      - name: Check adopted rules
+        env:
+          CONSUMER_REPOSITORY: ${{ github.repository }}
+        run: |
+          python3 central/scripts/agent_rules.py check \
+            --central-root central --project-root consumer \
+            --repository "$CONSUMER_REPOSITORY" \
+            --diff-output agent-rules-upstream.patch
+      - name: Preserve local rule discovery for central review
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: agent-rules-upstream-proposal
+          path: agent-rules-upstream.patch
+          if-no-files-found: ignore
+          retention-days: 14
