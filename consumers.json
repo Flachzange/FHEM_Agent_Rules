@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "consumers": [
+    {
+      "repository": "Flachzange/FHEM_Modul_Wiffi",
+      "branch": "main",
+      "supplement": "AGENTS-WIFFI.md"
+    },
+    {
+      "repository": "Flachzange/FHEMPresenceSimulation",
+      "branch": "main",
+      "supplement": "AGENTS-PresenceSimulation.md"
+    }
+  ]
+}
