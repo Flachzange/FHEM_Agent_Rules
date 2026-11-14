@@ -10,6 +10,11 @@
       "repository": "Flachzange/FHEMPresenceSimulation",
       "branch": "main",
       "supplement": "AGENTS-PresenceSimulation.md"
+    },
+    {
+      "repository": "Flachzange/fhem-matter-fork",
+      "branch": "main",
+      "supplement": "AGENTS-MATTER.md"
     }
   ]
 }
