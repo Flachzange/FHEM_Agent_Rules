@@ -34,6 +34,7 @@ jobs:
             FHEM_Agent_Rules
             FHEM_Modul_Wiffi
             FHEMPresenceSimulation
+            fhem-matter-fork
       - name: Create or update draft PRs
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
